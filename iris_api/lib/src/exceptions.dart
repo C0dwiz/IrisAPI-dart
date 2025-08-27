@@ -22,14 +22,14 @@ class NotEnoughSweetsError extends IrisAPIError {
   final double required;
   NotEnoughSweetsError({required this.required})
       : super(
-            'Not enough sweets. Required: ${required == required.truncate() ? required.truncate() : required}');
+            'Not enough sweets. Need ${required == required.truncate() ? required.truncate() : required}');
 }
 
 class NotEnoughGoldError extends IrisAPIError {
   final double required;
   NotEnoughGoldError({required this.required})
       : super(
-            'Not enough gold. Required: ${required == required.truncate() ? required.truncate() : required}');
+            'Not enough gold. Need ${required == required.truncate() ? required.truncate() : required}');
 }
 
 class TransactionSweetsNotFoundError extends IrisAPIError {

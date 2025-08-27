@@ -1,198 +1,144 @@
 import 'dart:async';
 
-import 'iris_api_base.dart';
+import 'package:http/http.dart' as http;
+
 import 'exceptions.dart';
+import 'iris_api_base.dart';
 import 'models.dart';
 
 class IrisAPI extends IrisAPIBase {
-  int _lastId = 0;
-
   IrisAPI({
     required super.botId,
     required super.irisToken,
-    super.baseUrl,
-    super.timeout,
-    super.client,
-  });
+    super.apiVersion = '0.1',
+    super.baseUrl = "https://iris-tg.ru/api",
+    super.timeout = const Duration(seconds: 10),
+    http.Client? client,
+  }) : super(client: client);
+
+  Future<String> getLatestApiVersion() async {
+    final data = await publicRequest('https://iris-tg.ru/api/last-version');
+    return data.toString();
+  }
 
   Future<Balance> balance() async {
-    final data = await request("pocket/balance");
+    final data = await request('balance');
     return Balance.fromJson(data);
   }
 
-  Future<bool> giveSweets(
-    double sweets,
-    int userId, {
-    String comment = "",
-  }) async {
+  Future<bool> giveSweets(double amount, int userId, {String? comment}) async {
     final params = {
-      "sweets": sweets == sweets.truncate()
-          ? sweets.truncate().toString()
-          : sweets.toString(),
-      "user_id": userId.toString(),
-      "comment": comment,
+      'sweets': amount,
+      'user_id': userId,
+      if (comment != null) 'comment': comment,
     };
+    final data = await request('giveSweets', params: params);
 
-    final response = await request("pocket/sweets/give", params: params);
-
-    if (response["result"] == "ok") {
-      return true;
-    }
-
-    if (response["error"] != null) {
-      final error = response["error"];
-      if (error["description"] is String &&
-          (error["description"] as String).contains("Not enough sweets")) {
-        throw NotEnoughSweetsError(required: sweets);
+    if (data is Map && data.containsKey('error')) {
+      final error = data['error'];
+      if (error['code'] == 409 &&
+          error['description'].toString().contains('Not enough sweets')) {
+        throw NotEnoughSweetsError(required: amount);
       }
+      throw IrisAPIError('${error['description']} (code: ${error['code']})');
     }
 
-    throw IrisAPIError("Sweets transfer failed: ${response.toString()}");
+    return data['result'] == true;
   }
 
-  Future<bool> giveGold(
-    double gold,
-    int userId, {
-    String comment = "",
-  }) async {
+  Future<bool> giveGold(double amount, int userId, {String? comment}) async {
     final params = {
-      "gold": gold == gold.truncate()
-          ? gold.truncate().toString()
-          : gold.toString(),
-      "user_id": userId.toString(),
-      "comment": comment,
+      'gold': amount,
+      'user_id': userId,
+      if (comment != null) 'comment': comment,
     };
+    final data = await request('giveGold', params: params);
 
-    final response = await request("pocket/gold/give", params: params);
-
-    if (response["result"] == "ok") {
-      return true;
-    }
-
-    if (response["error"] != null) {
-      final error = response["error"];
-      if (error["description"] is String &&
-          (error["description"] as String).contains("Not enough gold")) {
-        throw NotEnoughGoldError(required: gold);
+    if (data is Map && data.containsKey('error')) {
+      final error = data['error'];
+      if (error['code'] == 409 &&
+          error['description'].toString().contains('Not enough gold')) {
+        throw NotEnoughGoldError(required: amount);
       }
+      throw IrisAPIError('${error['description']} (code: ${error['code']})');
     }
 
-    throw IrisAPIError("Gold transfer failed: ${response.toString()}");
+    return data['result'] == true;
   }
 
-  Future<List<HistorySweetsEntry>> sweetsHistory({
-    int? offset,
-    int? limit,
-    int? userId,
-    String? transactionType,
-  }) async {
-    final params = <String, String>{};
-    if (offset != null) params["offset"] = offset.toString();
-    if (limit != null) params["limit"] = limit.toString();
-    if (userId != null) params["user_id"] = userId.toString();
-    if (transactionType != null) params["type"] = transactionType;
+  Future<List<HistorySweetsEntry>> sweetsHistory({int? limit}) async {
+    final params = {if (limit != null) 'limit': limit};
+    final data = await request('pocket/sweets/history', params: params);
 
-    final response = await request("pocket/sweets/history", params: params);
-
-    if (response is List) {
-      return response.map<HistorySweetsEntry>((item) {
-        return HistorySweetsEntry.fromJson(item);
-      }).toList();
+    if (data is List) {
+      return data.map((item) => HistorySweetsEntry.fromJson(item)).toList();
+    } else if (data is Map && data.containsKey('error')) {
+      throw TransactionSweetsNotFoundError(data['error']['description']);
     }
-
-    throw IrisAPIError("Unexpected response format for sweets history");
+    return [];
   }
 
-  Future<List<HistoryGoldEntry>> goldHistory({
-    int? offset,
-    int? limit,
-    int? userId,
-    String? transactionType,
-  }) async {
-    final params = <String, String>{};
-    if (offset != null) params["offset"] = offset.toString();
-    if (limit != null) params["limit"] = limit.toString();
-    if (userId != null) params["user_id"] = userId.toString();
-    if (transactionType != null) params["type"] = transactionType;
+  Future<List<HistoryGoldEntry>> goldHistory({int? limit}) async {
+    final params = {if (limit != null) 'limit': limit};
+    final data = await request('pocket/gold/history', params: params);
 
-    final response = await request("pocket/gold/history", params: params);
-
-    if (response is List) {
-      return response.map<HistoryGoldEntry>((item) {
-        return HistoryGoldEntry.fromJson(item);
-      }).toList();
+    if (data is List) {
+      return data.map((item) => HistoryGoldEntry.fromJson(item)).toList();
+    } else if (data is Map && data.containsKey('error')) {
+      throw TransactionGoldNotFoundError(data['error']['description']);
     }
-
-    throw IrisAPIError("Unexpected response format for gold history");
+    return [];
   }
 
-  Future<bool> bagShow({required bool on}) async {
-    final method = on ? "pocket/enable" : "pocket/disable";
-    final response = await request(method);
-    return response["response"] == "ok";
-  }
-
-  Future<HistorySweetsEntry> getSweetsTransaction(int transactionId) async {
-    final history = await sweetsHistory();
-    for (final entry in history) {
-      if (entry.id == transactionId) {
-        return entry;
-      }
+  Future<List<UpdateEvent>> getUpdates() async {
+    final data = await request('getUpdates');
+    if (data is List) {
+      return data.map((item) => UpdateEvent.fromJson(item)).toList();
     }
-    throw TransactionSweetsNotFoundError(
-        "Sweets transaction $transactionId not found");
+    return [];
   }
 
-  Future<HistoryGoldEntry> getGoldTransaction(int transactionId) async {
-    final history = await goldHistory();
-    for (final entry in history) {
-      if (entry.id == transactionId) {
-        return entry;
-      }
-    }
-    throw TransactionGoldNotFoundError(
-        "Gold transaction $transactionId not found");
-  }
-
-  Future<bool> userAll({required bool allow}) async {
-    final method = allow ? "pocket/allow_all" : "pocket/deny_all";
-    final response = await request(method);
-    return response["response"] == "ok";
-  }
-
-  Future<bool> allowUser(int userId, {required bool allow}) async {
-    final method = allow ? "pocket/allow_user" : "pocket/deny_user";
-    final params = {"user_id": userId.toString()};
-    final response = await request(method, params: params);
-    return response["response"] == "ok";
-  }
-
-  Stream<HistorySweetsEntry> trackTransactions({
-    int? initialOffset,
-    Duration pollInterval = const Duration(seconds: 1),
-    Duration reconnectDelay = const Duration(seconds: 5),
+  Stream<dynamic> trackTransactions({
+    Duration pollInterval = const Duration(seconds: 5),
   }) async* {
-    if (initialOffset != null) {
-      _lastId = initialOffset;
-    } else {
-      final history = await sweetsHistory(limit: 1);
-      _lastId = history.isNotEmpty ? history.first.id : 0;
-    }
+    int? lastEventId;
 
     while (true) {
       try {
-        final newTransactions = await sweetsHistory(offset: _lastId + 1);
-        if (newTransactions.isNotEmpty) {
-          for (final tx in newTransactions) {
-            yield tx;
-            _lastId = tx.id;
+        final updates = await getUpdates();
+        if (updates.isNotEmpty) {
+          if (lastEventId == null) {
+            lastEventId = updates.first.id;
+          } else {
+            final newEvents = updates.where((e) => e.id > lastEventId!).toList();
+            if (newEvents.isNotEmpty) {
+              newEvents.sort((a, b) => a.id.compareTo(b.id));
+              for (final event in newEvents) {
+                yield event.object;
+              }
+              lastEventId = newEvents.last.id;
+            }
           }
-        } else {
-          await Future.delayed(pollInterval);
         }
       } catch (e) {
-        await Future.delayed(reconnectDelay);
+        // Consider logging the error.
       }
+      await Future.delayed(pollInterval);
     }
+  }
+
+  Future<OrderBook> getOrderBook() async {
+    final data = await publicRequest('https://iris-tg.ru/k/trade/order_book');
+    return OrderBook.fromJson(data);
+  }
+
+  Future<List<TradeDeal>> getTradeDeals({int? fromId}) async {
+    final params = {if (fromId != null) 'id': fromId};
+    final data =
+        await publicRequest('https://iris-tg.ru/trade/deals', params: params);
+    if (data is List) {
+      return data.map((item) => TradeDeal.fromJson(item)).toList();
+    }
+    return [];
   }
 }
