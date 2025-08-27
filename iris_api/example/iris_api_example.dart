@@ -18,7 +18,7 @@ void main() async {
     // Получаем историю операций
     final history = await api.sweetsHistory(limit: 10);
     for (var entry in history) {
-      print('${entry.datetime}: ${entry.amount} sweets to ${entry.toUserId}');
+      print('${entry.datetime}: ${entry.amount} sweets to ${entry.peerId}');
     }
 
     // Отслеживаем новые транзакции

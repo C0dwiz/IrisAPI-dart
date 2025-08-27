@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:http/http.dart' as http;
+
 
 import 'exceptions.dart';
 import 'iris_api_base.dart';
@@ -13,8 +13,8 @@ class IrisAPI extends IrisAPIBase {
     super.apiVersion = '0.1',
     super.baseUrl = "https://iris-tg.ru/api",
     super.timeout = const Duration(seconds: 10),
-    http.Client? client,
-  }) : super(client: client);
+    super.client,
+  });
 
   Future<String> getLatestApiVersion() async {
     final data = await publicRequest('https://iris-tg.ru/api/last-version');
