@@ -1,6 +1,6 @@
 name: iris_api
 description: Dart client for Iris API
-version: 2.0.1
+version: 2.0.2
 homepage: https://github.com/c0dwiz/IrisAPI-dart
 repository: https://github.com/c0dwiz/IrisAPI-dart
 
