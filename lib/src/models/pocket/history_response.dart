@@ -144,13 +144,62 @@ class DonateScoreHistoryEntry {
 
   factory DonateScoreHistoryEntry.fromJson(Map<String, dynamic> json) {
     return DonateScoreHistoryEntry(
-      date: json['date'],
-      amount: json['amount'],
-      balance: json['balance'],
-      id: json['id'],
-      type: json['type'],
-      peerId: json['peer_id'],
-      comment: json['comment'],
+      date: json['date'] is int ? json['date'] as int : 0,
+      amount: json['amount'] is int ? json['amount'] as int : 0,
+      balance: json['balance'] is int ? json['balance'] as int : 0,
+      id: json['id'] is int ? json['id'] as int : 0,
+      type: json['type']?.toString() ?? '',
+      peerId: json['peer_id'] is int ? json['peer_id'] as int : 0,
+      comment: json['comment']?.toString() ?? '',
+    );
+  }
+}
+
+class TgStarsHistoryEntry {
+  final int id;
+  final String type;
+  final int date;
+  final int amount;
+  final int balance;
+  final int peerId;
+  final String comment;
+
+  TgStarsHistoryEntry({
+    required this.id,
+    required this.type,
+    required this.date,
+    required this.amount,
+    required this.balance,
+    required this.peerId,
+    required this.comment,
+  });
+
+  factory TgStarsHistoryEntry.fromJson(Map<String, dynamic> json) {
+    return TgStarsHistoryEntry(
+      id: json['id'] is int ? json['id'] as int : 0,
+      type: json['type']?.toString() ?? '',
+      date: json['date'] is int ? json['date'] as int : 0,
+      amount: json['amount'] is int ? json['amount'] as int : 0,
+      balance: json['balance'] is int ? json['balance'] as int : 0,
+      peerId: json['peer_id'] is int ? json['peer_id'] as int : 0,
+      comment: json['comment']?.toString() ?? '',
+    );
+  }
+}
+
+class TgStarsPrice {
+  final int tgstars;
+  final int sweets;
+
+  TgStarsPrice({
+    required this.tgstars,
+    required this.sweets,
+  });
+
+  factory TgStarsPrice.fromJson(Map<String, dynamic> json) {
+    return TgStarsPrice(
+      tgstars: json['tgstars'] is int ? json['tgstars'] as int : 0,
+      sweets: json['sweets'] is int ? json['sweets'] as int : 0,
     );
   }
 }

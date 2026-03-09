@@ -13,6 +13,7 @@ class IrisApi extends IrisApiBase {
   late final TradeMethods trade;
   late final UpdatesMethods updates;
   late final OtherMethods other;
+  late final NftMethods nft;
 
   IrisApi._({
     required int botId,
@@ -34,6 +35,7 @@ class IrisApi extends IrisApiBase {
     trade = TradeMethods(this);
     updates = UpdatesMethods(this);
     other = OtherMethods(this);
+    nft = NftMethods(this);
   }
 
   static Future<IrisApi> create({
@@ -174,37 +176,69 @@ class IrisApi extends IrisApiBase {
 
   Future<List<SweetsHistoryEntry>> getSweetsHistory({
     int offset = 0,
+    int limit = 50,
   }) async {
     return await pocket.getSweetsHistory(
       HistoryRequest(
         offset: offset,
-        limit: 50,
+        limit: limit,
       ),
-      limit: 50,
+      limit: limit,
     );
   }
 
   Future<List<GoldHistoryEntry>> getGoldHistory({
     int offset = 0,
+    int limit = 50,
   }) async {
     return await pocket.getGoldHistory(
       HistoryRequest(
         offset: offset,
-        limit: 50,
+        limit: limit,
       ),
-      limit: 50,
+      limit: limit,
     );
   }
 
   Future<List<DonateScoreHistoryEntry>> getDonateScoreHistory({
     int offset = 0,
+    int limit = 50,
   }) async {
     return await pocket.getDonateScoreHistory(
       HistoryRequest(
         offset: offset,
-        limit: 50,
+        limit: limit,
       ),
     );
+  }
+
+  Future<int> giveTgStars({
+    required int amount,
+    required int userId,
+    String comment = '',
+  }) async {
+    return await pocket.giveTgStars(
+      userId: userId,
+      amount: amount,
+      comment: comment,
+    );
+  }
+
+  Future<List<TgStarsHistoryEntry>> getTgStarsHistory({
+    int offset = 0,
+    int limit = 200,
+  }) async {
+    return await pocket.getTgStarsHistory(
+      HistoryRequest(offset: offset, limit: limit),
+    );
+  }
+
+  Future<int> buyTgStars(int amount) async {
+    return await pocket.buyTgStars(amount);
+  }
+
+  Future<TgStarsPrice> getTgStarsPrice(int amount) async {
+    return await pocket.getTgStarsPrice(amount);
   }
 
   Future<bool> enableOrDisablePocket(bool enable) async {
@@ -281,6 +315,13 @@ class IrisApi extends IrisApiBase {
     return await trade.getMyOrders();
   }
 
+  Future<List<Deal>> getDealsTrade({
+    int? fromId,
+    int? limit,
+  }) async {
+    return await trade.getDeals(fromId: fromId, limit: limit);
+  }
+
   Future<CancelResult> cancelPriceTrade(double price) async {
     return await trade.cancelByPrice(CancelPriceRequest(
       price: price,
@@ -302,6 +343,49 @@ class IrisApi extends IrisApiBase {
     return await trade.getOrderBook();
   }
 
+  Future<int> giveNft({
+    required int id,
+    required String name,
+    required int userId,
+    String comment = '',
+  }) async {
+    return await nft.give(
+      NftGiveRequest(
+        id: id,
+        name: name,
+        userId: userId,
+        comment: comment,
+      ),
+    );
+  }
+
+  Future<NftItem> getNftInfo({
+    required int id,
+    required String name,
+  }) async {
+    return await nft.info(
+      NftQuery(id: id, name: name),
+    );
+  }
+
+  Future<List<NftItem>> getNftList({
+    int offset = 0,
+    int limit = 50,
+  }) async {
+    return await nft.list(
+      NftListRequest(offset: offset, limit: limit),
+    );
+  }
+
+  Future<List<NftHistoryEntry>> getNftHistory({
+    int offset = 0,
+    int limit = 50,
+  }) async {
+    return await nft.history(
+      NftListRequest(offset: offset, limit: limit),
+    );
+  }
+
   String get currentApiVersion => apiVersion;
 
   String generateDeepLink(Currency currency, int count, [String? comment]) {
@@ -317,14 +401,16 @@ class IrisApi extends IrisApiBase {
     String url;
     switch (currency) {
       case Currency.gold:
-        url = 'https://t.me/iris_black_bot?start=givegold_bot${botId}_$count';
+        url = 'https://t.me/iris_cm_bot?start=givegold_bot${botId}_$count';
         break;
       case Currency.sweets:
-        url = 'https://t.me/iris_black_bot?start=give_bot${botId}_$count';
+        url = 'https://t.me/iris_cm_bot?start=give_bot${botId}_$count';
         break;
       case Currency.donateScore:
-        url =
-            'https://t.me/iris_black_bot?start=givedonate_score_bot${botId}_$count';
+        url = 'https://t.me/iris_cm_bot?start=givedonate_score_bot${botId}_$count';
+        break;
+      case Currency.tgstars:
+        url = 'https://t.me/iris_cm_bot?start=givetgstars_bot${botId}_$count';
         break;
     }
 
@@ -339,4 +425,5 @@ enum Currency {
   gold,
   sweets,
   donateScore,
+  tgstars,
 }

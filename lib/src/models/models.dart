@@ -22,6 +22,8 @@ export 'trade/orders_response.dart';
 export 'updates/get_updates_request.dart';
 export 'updates/update_event.dart';
 
+export 'nft/nft_models.dart';
+
 export 'other/iris_agents_response.dart';
 export 'other/last_version_response.dart';
 

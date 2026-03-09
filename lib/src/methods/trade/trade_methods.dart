@@ -10,7 +10,7 @@ class TradeMethods {
       'price': request.price.toString(),
       'volume': request.volume.toString(),
     });
-    return BuySellResponse.fromJson(response);
+    return BuySellResponse.fromJson(response['result']);
   }
 
   Future<BuySellResponse> sellGold(SellRequest request) async {
@@ -18,7 +18,7 @@ class TradeMethods {
       'price': request.price.toString(),
       'volume': request.volume.toString(),
     });
-    return BuySellResponse.fromJson(response);
+    return BuySellResponse.fromJson(response['result']);
   }
 
   Future<CancelResult> cancelByPrice(CancelPriceRequest request) async {
@@ -41,46 +41,31 @@ class TradeMethods {
     return CancelResult.fromJson(response['result']);
   }
 
-  Future<List<Deal>> getDeals({int? fromId}) async {
-    final params = fromId != null ? {'id': fromId.toString()} : null;
+  Future<List<Deal>> getDeals({int? fromId, int? limit}) async {
+    final params = <String, String>{
+      if (fromId != null) 'id': fromId.toString(),
+      if (limit != null) 'limit': limit.toString(),
+    };
     final response = await api.getRequest('trade/deals', parameters: params);
-    return (response as List).map((e) => Deal.fromJson(e)).toList();
+    final result = response is Map<String, dynamic>
+        ? (response['result'] as List<dynamic>? ?? <dynamic>[])
+        : <dynamic>[];
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(Deal.fromJson)
+        .toList();
   }
 
   Future<OrderBook> getOrderBook() async {
-    try {
-      final response = await api.getRequest('trade/book');
-
-      if (response == null) {
-        return OrderBook(buy: [], sell: []);
-      }
-
-      return OrderBook.fromJson(response);
-    } catch (e) {
-      print('Error in getOrderBook: $e');
-      return OrderBook(buy: [], sell: []);
-    }
+    final response = await api.getRequest('trade/orderbook');
+    final result = response is Map<String, dynamic>
+        ? (response['result'] as Map<String, dynamic>? ?? <String, dynamic>{})
+        : <String, dynamic>{};
+    return OrderBook.fromJson(result);
   }
 
+  @Deprecated('trade/my_orders is not present in API v0.5')
   Future<OrdersResponse> getMyOrders() async {
-    try {
-      final response = await api.getRequest('trade/my_orders');
-
-      if (response == null) {
-        return OrdersResponse(orders: []);
-      }
-
-      if (response is Map<String, dynamic>) {
-        return OrdersResponse.fromJson(response);
-      } else if (response is List) {
-        return OrdersResponse(
-            orders: response.map((e) => Order.fromJson(e)).toList());
-      }
-
-      return OrdersResponse(orders: []);
-    } catch (e) {
-      print('Error in getMyOrders: $e');
-      return OrdersResponse(orders: []);
-    }
+    return OrdersResponse(orders: []);
   }
 }

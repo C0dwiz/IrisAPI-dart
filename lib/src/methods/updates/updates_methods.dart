@@ -6,11 +6,19 @@ class UpdatesMethods {
   UpdatesMethods(this.api);
 
   Future<List<UpdateEvent>> getUpdates(GetUpdatesRequest request) async {
-    final response = await api.postRequest('getUpdates', parameters: {
+    final response = await api.postRequest('updates/getUpdates', parameters: {
       'offset': request.offset.toString(),
       'limit': request.limit.toString(),
     });
-    return (response as List).map((e) => UpdateEvent.fromJson(e)).toList();
+
+    final result = response is Map<String, dynamic>
+        ? (response['result'] as List<dynamic>? ?? <dynamic>[])
+        : <dynamic>[];
+
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(UpdateEvent.fromJson)
+        .toList();
   }
 
   Stream<UpdateEvent> get updateStream async* {

@@ -16,7 +16,7 @@ class SweetsGiveRequest {
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
-      'sweets': sweets,
+      'amount': sweets,
       'comment': comment,
       'without_donate_score': withoutDonateScore,
       'donate_score': donateScore,
@@ -42,7 +42,7 @@ class GoldGiveRequest {
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
-      'gold': gold,
+      'amount': gold,
       'comment': comment,
       'without_donate_score': withoutDonateScore,
       'donate_score': donateScore,

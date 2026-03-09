@@ -5,9 +5,22 @@ class PocketMethods {
 
   PocketMethods(this.api);
 
+  List<dynamic> _extractResultList(dynamic response) {
+    if (response is Map<String, dynamic> && response['result'] is List) {
+      return response['result'] as List<dynamic>;
+    }
+    if (response is List) {
+      return response;
+    }
+    return <dynamic>[];
+  }
+
   Future<Balance> getBalance() async {
     final response = await api.getRequest('pocket/balance');
-    return Balance.fromJson(response);
+    final result = response is Map<String, dynamic>
+        ? (response['result'] as Map<String, dynamic>? ?? <String, dynamic>{})
+        : <String, dynamic>{};
+    return Balance.fromJson(result);
   }
 
   Future<int> giveSweets(
@@ -15,7 +28,7 @@ class PocketMethods {
     required double amount,
   }) async {
     final response = await api.postRequest('pocket/sweets/give', parameters: {
-      'sweets': amount.toString(),
+      'amount': amount.toString(),
       'user_id': request.userId.toString(),
       'comment': request.comment,
       'without_donate_score': request.withoutDonateScore.toString(),
@@ -29,7 +42,7 @@ class PocketMethods {
     required int amount,
   }) async {
     final response = await api.postRequest('pocket/gold/give', parameters: {
-      'gold': amount.toString(),
+      'amount': amount.toString(),
       'user_id': request.userId.toString(),
       'comment': request.comment,
       'without_donate_score': request.withoutDonateScore.toString(),
@@ -52,149 +65,119 @@ class PocketMethods {
     HistoryRequest request, {
     required int limit,
   }) async {
-    try {
-      final response =
-          await api.getRequest('pocket/sweets/history', parameters: {
-        'offset': request.offset.toString(),
-      });
+    final response = await api.getRequest('pocket/sweets/history', parameters: {
+      'offset': request.offset.toString(),
+      'limit': limit.toString(),
+    });
 
-      if (response is List) {
-        return response.map((e) => SweetsHistoryEntry.fromJson(e)).toList();
-      }
-
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('result') && response['result'] is List) {
-          return (response['result'] as List)
-              .map((e) => SweetsHistoryEntry.fromJson(e))
-              .toList();
-        }
-      }
-
-      return [];
-    } catch (e) {
-      print('Error in getSweetsHistory: $e');
-      return [];
-    }
+    return _extractResultList(response)
+        .whereType<Map<String, dynamic>>()
+        .map(SweetsHistoryEntry.fromJson)
+        .toList();
   }
 
   Future<List<GoldHistoryEntry>> getGoldHistory(
     HistoryRequest request, {
     required int limit,
   }) async {
-    try {
-      final response = await api.getRequest('pocket/gold/history', parameters: {
-        'offset': request.offset.toString(),
-      });
+    final response = await api.getRequest('pocket/gold/history', parameters: {
+      'offset': request.offset.toString(),
+      'limit': limit.toString(),
+    });
 
-      if (response is List) {
-        return response.map((e) => GoldHistoryEntry.fromJson(e)).toList();
-      }
-
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('result') && response['result'] is List) {
-          return (response['result'] as List)
-              .map((e) => GoldHistoryEntry.fromJson(e))
-              .toList();
-        }
-      }
-
-      return [];
-    } catch (e) {
-      print('Error in getGoldHistory: $e');
-      return [];
-    }
+    return _extractResultList(response)
+        .whereType<Map<String, dynamic>>()
+        .map(GoldHistoryEntry.fromJson)
+        .toList();
   }
 
   Future<List<DonateScoreHistoryEntry>> getDonateScoreHistory(
       HistoryRequest request) async {
-    try {
-      final response =
-          await api.getRequest('pocket/donate_score/history', parameters: {
-        'offset': request.offset.toString(),
-      });
+    final response =
+        await api.getRequest('pocket/donate_score/history', parameters: {
+      'offset': request.offset.toString(),
+      'limit': request.limit.toString(),
+    });
 
-      if (response == null) return [];
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('result')) {
-          final result = response['result'];
-          if (result is List) {
-            return result
-                .map((e) => DonateScoreHistoryEntry.fromJson(e))
-                .toList();
-          }
-        }
-        return [];
-      } else if (response is List) {
-        return response
-            .map((e) => DonateScoreHistoryEntry.fromJson(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      print('Error in getDonateScoreHistory: $e');
-      return [];
-    }
+    return _extractResultList(response)
+        .whereType<Map<String, dynamic>>()
+        .map(DonateScoreHistoryEntry.fromJson)
+        .toList();
   }
 
   Future<bool> enablePocket() async {
-    try {
-      final response = await api.postRequest('pocket/enable');
-      return response['result'] == 1;
-    } catch (e) {
-      print('Error in enablePocket: $e');
-      return false;
-    }
+    final response = await api.postRequest('pocket/enable');
+    return response['result'] == true;
   }
 
   Future<bool> disablePocket() async {
-    try {
-      final response = await api.postRequest('pocket/disable');
-      return response['result'] == 1;
-    } catch (e) {
-      print('Error in disablePocket: $e');
-      return false;
-    }
+    final response = await api.postRequest('pocket/disable');
+    return response['result'] == true;
   }
 
   Future<bool> allowAllPocket() async {
-    try {
-      final response = await api.postRequest('pocket/allow_all');
-      return response['result'] == 1;
-    } catch (e) {
-      print('Error in allowAllPocket: $e');
-      return false;
-    }
+    final response = await api.postRequest('pocket/allow_all');
+    return response['result'] == true;
   }
 
   Future<bool> denyAllPocket() async {
-    try {
-      final response = await api.postRequest('pocket/deny_all');
-      return response['result'] == 1;
-    } catch (e) {
-      print('Error in denyAllPocket: $e');
-      return false;
-    }
+    final response = await api.postRequest('pocket/deny_all');
+    return response['result'] == true;
   }
 
   Future<void> allowUser(AllowDenyUserRequest request) async {
-    try {
-      await api.postRequest('pocket/allow_user', parameters: {
-        'user_id': request.userId.toString(),
-      });
-    } catch (e) {
-      print('Error in allowUser: $e');
-      rethrow;
-    }
+    await api.postRequest('pocket/allow_user', parameters: {
+      'user_id': request.userId.toString(),
+    });
   }
 
   Future<void> denyUser(AllowDenyUserRequest request) async {
-    try {
-      await api.postRequest('pocket/deny_user', parameters: {
-        'user_id': request.userId.toString(),
-      });
-    } catch (e) {
-      print('Error in denyUser: $e');
-      rethrow;
-    }
+    await api.postRequest('pocket/deny_user', parameters: {
+      'user_id': request.userId.toString(),
+    });
+  }
+
+  Future<int> giveTgStars({
+    required int userId,
+    required int amount,
+    String comment = '',
+  }) async {
+    final response = await api.postRequest('pocket/tgstars/give', parameters: {
+      'amount': amount.toString(),
+      'user_id': userId.toString(),
+      'comment': comment,
+    });
+    return response['result'];
+  }
+
+  Future<List<TgStarsHistoryEntry>> getTgStarsHistory(
+    HistoryRequest request,
+  ) async {
+    final response = await api.getRequest('pocket/tgstars/history', parameters: {
+      'offset': request.offset.toString(),
+      'limit': request.limit.toString(),
+    });
+
+    return _extractResultList(response)
+        .whereType<Map<String, dynamic>>()
+        .map(TgStarsHistoryEntry.fromJson)
+        .toList();
+  }
+
+  Future<int> buyTgStars(int amount) async {
+    final response = await api.postRequest('pocket/tgstars/buy', parameters: {
+      'amount': amount.toString(),
+    });
+    return response['result'];
+  }
+
+  Future<TgStarsPrice> getTgStarsPrice(int amount) async {
+    final response = await api.getRequest('pocket/tgstars/price', parameters: {
+      'amount': amount.toString(),
+    });
+    final result = response is Map<String, dynamic>
+        ? (response['result'] as Map<String, dynamic>? ?? <String, dynamic>{})
+        : <String, dynamic>{};
+    return TgStarsPrice.fromJson(result);
   }
 }

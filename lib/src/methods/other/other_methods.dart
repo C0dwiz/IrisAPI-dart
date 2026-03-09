@@ -8,7 +8,10 @@ class OtherMethods {
 
   Future<List<int>> getIrisAgents() async {
     final response = await api.getRequest('iris_agents');
-    return (response as List).cast<int>();
+    final result = response is Map<String, dynamic>
+        ? (response['result'] as List<dynamic>? ?? <dynamic>[])
+        : <dynamic>[];
+    return result.whereType<int>().toList();
   }
 
   Future<String> getLastVersion() async {
